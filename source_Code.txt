@@ -1,0 +1,281 @@
+#include<pic16f877a.h>
+
+#include<xc.h>
+
+#include<stdint.h>
+
+//#define _XTAL_FREQ
+
+20000000
+
+#define _XTAL_FREQ
+
+20000000
+
+unsigned int duty_cycle;
+
+#define BUZZER_PIN REO
+
+unsigned int washer_flag;
+
+unsigned int water_flag;
+
+void SetPWMDutycycle( unsigned int DutyCycle) {
+
+//TRISC = 0x00;
+
+CCPR1L = DutyCycle >> 2;
+
+CCP1CON = CCP1CON & OxCF;
+
+CCP1CON = CCP1CON |
+(0x30 & (DutyCycle << 4)); PORTBbits.RB7 = PORTCbits.RC2; //set speed to wiper }
+
+int getRainIntensity() { // Code to read the rain intensity from the sensor // You need to implement this function based on your specific sensor and ADC configuration
+
+ADCONO = 0xA1;
+
+ADCON1 = 0x80;
+
+ADCONO |= 4; //Go bit =1; //now wait for ADC FOR CONVERSION TO BE OVER while (ADCONO & 4) ( }
+
+duty_cycle = ADRESH <<<
+
+8;
+
+duty_cycle = ADRESL;
+
+return duty_cycle;
+ }
+
+void activateBuzzer() {
+
+// Set the buzzer pin
+
+(REO) high
+
+TRISE = 0;
+
+BUZZER_PIN = 1;
+
+_delay_ms(1000);
+
+BUZZER_PIN = 0;
+
+//return 0;
+
+}
+
+void init_serial(void)
+
+{
+
+TRISCbits.TRISC6=0;
+
+TRISCbits.TRISC7=1;
+
+SPBRG=129;
+
+TXSTA =0x24;
+
+RCSTA=0x90;
+
+TXIE=0;
+
+RCIE=1;
+
+} void byte_2_serport (uint8_t byte)
+
+(
+
+TXREG = byte:
+while(!TRMT);
+
+}
+
+void Mes2Usart
+
+(char*cptr)
+
+{
+
+while (*cptr)
+
+byte_2_serport (*cptr++); }
+
+char warn1[]=" Warning1:
+
+Water tank empty \r\n";
+
+char warn2[]=" Warning2:
+
+Rain is detected \r\n";
+
+void main() {
+
+// char buf[20];
+
+TRISC = 0xFF;
+
+TRISB = 0;
+
+TRISE = 0;
+
+PORTBbits.RBO = 0; //set led for washer switch PORTBbits.RB1 = 0; //set led as water tank PORTBbits.RB2 = 0; //
+indicate washer ON/OFF
+
+PORTBbits.RB3 = 0;
+
+PORTBbits.RB4 = 0;
+
+PORTBbits.RB5 = 0;
+
+PORTBbits.RB6 = 0;
+
+CCP1CON = 0x0C;
+
+PR2 = 0xFF;
+
+T2CON = 0x04;
+
+int i = 0;
+
+int rain;
+
+while (1) { {
+
+TRISC = 0xFF;
+if (!(PORTC & 1)) { PORTBbits.RBO = 1; //try to On washer if (washer_flag == 1) {
+
+PORTBbits.RB2 = 0; // washer OFF washer_flag = 0; //if washer is on then washer is off
+
+}
+
+else {
+
+// washer_flag=1;
+
+if (rain < 100) //check no
+
+rain
+
+{
+
+if (water_flag == 1) //
+
+check water tank status
+
+{
+
+//warning1 = no rain,water
+
+tank empty,try to on
+
+washer
+init_serial();
+
+// Mes2Usart(" Warning1:Water tank empty \r\n"); Mes2Usart(warn1); activateBuzzer(); PORTBbits.RB2 = 0; // washer OFF washer_flag = 0;
+
+} else //tank is full {
+
+PORTBbits.RB2 = 1; //
+
+Washer ON
+
+SetPWMDutycycle(500);
+
+washer_flag = 1;
+
+// PORTBbits.RB7=1; //
+
+wiper high speed
+ }
+
+}
+
+else
+
+//warning2= raininig,try to on washer
+
+init serial();
+
+// Mes2Usart(" Warning2:
+
+Rain is detected \r\n"); Mes2Usart(warn2) ;
+
+activateBuzzer();
+
+}
+
+}
+
+}
+
+else {
+
+PORTBbits.RBO = 0;
+
+// PORTBbits.RB1=0;
+
+}
+
+if (!(PORTC & 2)) {
+
+PORTRhits RR1 = 1.
+//PORTBbits.RB1= 1;
+
+water_flag = 1;//water
+
+tank is empty
+
+if(washer_flag==1)//if
+
+washer ON
+
+{
+
+PORTBbits.RB2 = 0; //
+
+washer OFF
+
+washer_flag = 0; //if
+
+washer is on then washer is off
+
+}
+
+}
+
+else {
+
+PORTBbits.RB1 = 0;
+
+// PORTBbits.RB1=0;
+
+}
+
+TRISC = 0x00;
+
+rain = getRainIntensity();
+if (rain > 100) {
+
+if (washer_flag == 1) {
+
+washer_flag = 0;
+
+PORTBbits.RB2 = 0; // if raining, then turn oFF washer
+
+}
+
+} if(washer_flag==1)
+
+{
+
+rain=500;
+
+} SetPWMDutycycle(rain); //wiper on if duty cycle is greater than 100
+_delay_ms(2);
+
+}
+
+}
